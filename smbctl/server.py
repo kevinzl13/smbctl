@@ -129,7 +129,8 @@ def start_server(args):
         "dir": directory,
         "time": time.time(),
         "auth": bool(args.user and args.password),
-        "user": args.user
+        "user": args.user,
+        "ips": get_ips()
     }
 
     save_state(state)
@@ -192,13 +193,20 @@ def status_server():
 
     if not alive:
         save_state({})
+        print("[-] SMB server is not running")
+        return
 
     uptime = int(time.time() - state.get("time", time.time()))
 
     print("\n=== SMB SERVER STATUS ===")
     print(f"PID      : {pid}")
-    print(f"Auth     : {state.get('auth')}")
-    print(f"User     : {state.get('user')}")
+    print(
+        f"Auth     : "
+        f"{'Enabled' if state.get('auth') else 'Guest'}"
+    )
+    if state.get("user"):
+        print(f"User     : {state['user']}")
+
     print(f"Share    : {state.get('share')}")
     print(f"Dir      : {state.get('dir')}")
     print(f"Alive    : {'YES' if alive else 'NO'}")
@@ -217,12 +225,23 @@ def info_server():
 
     print("\n=== ACCESS INFO ===\n")
 
-    for ip in get_ips():
+    for ip in state.get("ips", get_ips()):
 
-        print(f"SMB URL:")
+        print("SMB URL:")
         print(f"  smb://{ip}/{state['share']}")
 
-        print("\nClient:")
+        print()
+
+        if state.get("auth"):
+            print("Authentication:")
+            print("  Required")
+        else:
+            print("Authentication:")
+            print("  Guest")
+
+        print()
+
+        print("Client:")
         print(
             f"  smbctl connect "
             f"-i {ip} "
