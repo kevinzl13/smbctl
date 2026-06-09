@@ -41,9 +41,10 @@ def get_connection(state, server):
 # =========================
 # WINDOWS CONNECT (UNC ONLY)
 # =========================
-def win_connect(user, password, ip, share, drive="Z"):
+def win_connect(user, password, ip, share, mount="Z"):
     unc = f"\\\\{ip}\\{share}"
-    drive_letter = f"{drive}:"
+
+    drive_letter = mount.rstrip(":").upper() + ":"
 
     cmd = [
         "net",
@@ -64,9 +65,9 @@ def win_connect(user, password, ip, share, drive="Z"):
     return drive_letter
 
 
-def win_disconnect(drive):
+def win_disconnect(mount):
     subprocess.run(
-        ["net", "use", drive, "/delete", "/y"],
+        ["net", "use", mount, "/delete", "/y"],
         check=False
     )
 
@@ -157,7 +158,7 @@ def cmd_connect(args):
             args.password,
             args.ip,
             args.share,
-            args.drive
+            args.mount
         )
 
     elif system == "linux":
@@ -176,8 +177,7 @@ def cmd_connect(args):
         "type": system,
         "target": target,
         "share": args.share,
-        "drive": args.drive if system == "windows" else None,
-        "mount": args.mount if system == "linux" else None,
+        "mount": args.mount,
         "auth": bool(args.user and args.password)
     }
 
@@ -206,10 +206,7 @@ def cmd_list(args):
         print(f"SERVER  : {server}")
         print(f"SHARE   : {share}")
         print(f"CLIENT  : {v.get('type')}")
-        if v.get("type") == "windows":
-            print(f"DRIVE   : {v.get('target')}")
-        else:
-            print(f"MOUNT   : {v.get('target')}")
+        print(f"MOUNT   : {v.get('target')}")
         print(f"AUTH    : {v.get('auth')}")
         print("-" * 50)
 
